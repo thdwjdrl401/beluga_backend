@@ -1,11 +1,7 @@
 package com.thdwjdrl.yejeong.beluga.event;
 
-import java.time.Clock;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Locale;
 
-import com.thdwjdrl.yejeong.beluga.common.exception.InvalidRequestException;
 import com.thdwjdrl.yejeong.beluga.common.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,46 +11,34 @@ public class EventService {
 
 	private final EventMapper eventMapper;
 	private final EventStatusResolver eventStatusResolver;
-	private final Clock clock;
 
-	public EventService(EventMapper eventMapper, EventStatusResolver eventStatusResolver, Clock clock) {
+	public EventService(EventMapper eventMapper, EventStatusResolver eventStatusResolver) {
 		this.eventMapper = eventMapper;
 		this.eventStatusResolver = eventStatusResolver;
-		this.clock = clock;
-	}
-
-	@Transactional
-	public EventResponse createEvent(CreateEventRequest request) {
-		validateCreateRequest(request);
-
-		LocalDateTime now = LocalDateTime.now(clock);
-		Event event = new Event();
-		event.setTitle(request.title().trim());
-		event.setDescription(request.description().trim());
-		event.setStartAt(request.startAt());
-		event.setEndAt(request.endAt());
-		event.setWinnerLimit(request.winnerLimit());
-		event.setCurrentWinnerCount(0);
-		event.setLastRequestSequence(0);
-		event.setCreatedAt(now);
-		event.setStatus(eventStatusResolver.resolve(request.startAt(), request.endAt()));
-
-		eventMapper.insert(event);
-		return toResponse(event);
 	}
 
 	@Transactional(readOnly = true)
-	public List<EventResponse> getEvents(String statusText) {
-		EventStatus statusFilter = parseStatus(statusText);
-		return eventMapper.findAll().stream()
-				.map(this::toResponse)
-				.filter(event -> statusFilter == null || event.status() == statusFilter)
+	public EventListResponse getVisibleEvents() {
+		List<EventSummaryResponse> visibleEvents = eventMapper.findAll().stream()
+				.map(this::toSummaryResponse)
+				.filter(event -> event.status() != EventStatus.ENDED)
+				.sorted((left, right) -> {
+					int statusCompare = Integer.compare(priorityOf(left.status()), priorityOf(right.status()));
+					if (statusCompare != 0) {
+						return statusCompare;
+					}
+					return left.startAt().compareTo(right.startAt());
+				})
 				.toList();
-	}
 
-	@Transactional(readOnly = true)
-	public EventResponse getEvent(Long eventId) {
-		return toResponse(getRequiredEvent(eventId));
+		return new EventListResponse(
+				visibleEvents.stream()
+						.filter(event -> event.status() == EventStatus.ACTIVE)
+						.toList(),
+				visibleEvents.stream()
+						.filter(event -> event.status() == EventStatus.SCHEDULED)
+						.toList()
+		);
 	}
 
 	@Transactional(readOnly = true)
@@ -66,57 +50,26 @@ public class EventService {
 		return event;
 	}
 
-	private void validateCreateRequest(CreateEventRequest request) {
-		if (request == null) {
-			throw new InvalidRequestException("이벤트 생성 요청이 비어 있습니다.");
-		}
-		if (request.title() == null || request.title().isBlank()) {
-			throw new InvalidRequestException("이벤트명은 필수입니다.");
-		}
-		if (request.title().length() > 100) {
-			throw new InvalidRequestException("이벤트명은 100자를 초과할 수 없습니다.");
-		}
-		if (request.description() == null || request.description().isBlank()) {
-			throw new InvalidRequestException("이벤트 설명은 필수입니다.");
-		}
-		if (request.description().length() > 500) {
-			throw new InvalidRequestException("이벤트 설명은 500자를 초과할 수 없습니다.");
-		}
-		if (request.startAt() == null || request.endAt() == null) {
-			throw new InvalidRequestException("이벤트 시작/종료 시간은 필수입니다.");
-		}
-		if (!request.startAt().isBefore(request.endAt())) {
-			throw new InvalidRequestException("이벤트 종료 시간은 시작 시간보다 뒤여야 합니다.");
-		}
-		if (request.winnerLimit() <= 0) {
-			throw new InvalidRequestException("최대 당첨 인원은 1명 이상이어야 합니다.");
-		}
+	private int priorityOf(EventStatus status) {
+		return switch (status) {
+			case ACTIVE -> 0;
+			case SCHEDULED -> 1;
+			case ENDED -> 2;
+		};
 	}
 
-	private EventStatus parseStatus(String statusText) {
-		if (statusText == null || statusText.isBlank()) {
-			return null;
-		}
-
-		try {
-			return EventStatus.valueOf(statusText.trim().toUpperCase(Locale.ROOT));
-		}
-		catch (IllegalArgumentException exception) {
-			throw new InvalidRequestException("지원하지 않는 이벤트 상태입니다.");
-		}
-	}
-
-	private EventResponse toResponse(Event event) {
-		return new EventResponse(
+	private EventSummaryResponse toSummaryResponse(Event event) {
+		return new EventSummaryResponse(
 				event.getEventId(),
-				event.getTitle(),
-				event.getDescription(),
+				event.getEventName(),
+				event.getProductName(),
+				event.getRepresentativeAttachId(),
+				event.getWinnerLimit(),
+				event.getWinnerCount(),
+				event.getParticipantCount(),
 				event.getStartAt(),
 				event.getEndAt(),
-				event.getWinnerLimit(),
-				event.getCurrentWinnerCount(),
-				eventStatusResolver.resolve(event),
-				event.getCreatedAt()
+				eventStatusResolver.resolve(event)
 		);
 	}
 

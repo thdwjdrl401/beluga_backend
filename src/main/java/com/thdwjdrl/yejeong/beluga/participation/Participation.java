@@ -8,8 +8,9 @@ public class Participation {
 	private Long eventId;
 	private Long userId;
 	private LocalDateTime participatedAt;
-	private ParticipationResultStatus resultStatus;
 	private long requestSequence;
+	private ParticipationResultStatus resultStatus;
+	private Long gifticonAttachId;
 	private LocalDateTime createdAt;
 
 	public Long getParticipationId() {
@@ -44,6 +45,14 @@ public class Participation {
 		this.participatedAt = participatedAt;
 	}
 
+	public long getRequestSequence() {
+		return requestSequence;
+	}
+
+	public void setRequestSequence(long requestSequence) {
+		this.requestSequence = requestSequence;
+	}
+
 	public ParticipationResultStatus getResultStatus() {
 		return resultStatus;
 	}
@@ -52,12 +61,12 @@ public class Participation {
 		this.resultStatus = resultStatus;
 	}
 
-	public long getRequestSequence() {
-		return requestSequence;
+	public Long getGifticonAttachId() {
+		return gifticonAttachId;
 	}
 
-	public void setRequestSequence(long requestSequence) {
-		this.requestSequence = requestSequence;
+	public void setGifticonAttachId(Long gifticonAttachId) {
+		this.gifticonAttachId = gifticonAttachId;
 	}
 
 	public LocalDateTime getCreatedAt() {

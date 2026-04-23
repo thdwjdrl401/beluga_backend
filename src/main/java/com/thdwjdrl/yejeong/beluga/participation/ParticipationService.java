@@ -11,8 +11,6 @@ import com.thdwjdrl.yejeong.beluga.event.EventMapper;
 import com.thdwjdrl.yejeong.beluga.event.EventService;
 import com.thdwjdrl.yejeong.beluga.event.EventStatus;
 import com.thdwjdrl.yejeong.beluga.event.EventStatusResolver;
-import com.thdwjdrl.yejeong.beluga.user.User;
-import com.thdwjdrl.yejeong.beluga.user.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -26,7 +24,6 @@ public class ParticipationService {
 	private final EventMapper eventMapper;
 	private final EventService eventService;
 	private final EventStatusResolver eventStatusResolver;
-	private final UserService userService;
 	private final ParticipationMapper participationMapper;
 	private final Clock clock;
 
@@ -34,22 +31,19 @@ public class ParticipationService {
 			EventMapper eventMapper,
 			EventService eventService,
 			EventStatusResolver eventStatusResolver,
-			UserService userService,
 			ParticipationMapper participationMapper,
 			Clock clock
 	) {
 		this.eventMapper = eventMapper;
 		this.eventService = eventService;
 		this.eventStatusResolver = eventStatusResolver;
-		this.userService = userService;
 		this.participationMapper = participationMapper;
 		this.clock = clock;
 	}
 
 	@Transactional
-	public ParticipationResponse participate(Long eventId, String rawUserEmail) {
+	public ParticipationResponse participate(Long eventId, Long userId) {
 		String requestId = UUID.randomUUID().toString();
-		String userEmail = userService.normalizeAndValidateEmail(rawUserEmail);
 		Event event = eventMapper.findByIdForUpdate(eventId);
 		if (event == null) {
 			throw new ResourceNotFoundException("이벤트를 찾을 수 없습니다.");
@@ -60,7 +54,7 @@ public class ParticipationService {
 			log.info("participation_rejected requestId={} eventId={} reason=BEFORE_START", requestId, eventId);
 			return new ParticipationResponse(
 					eventId,
-					null,
+					userId,
 					ParticipationResultStatus.BEFORE_START,
 					null,
 					null,
@@ -73,7 +67,7 @@ public class ParticipationService {
 			log.info("participation_rejected requestId={} eventId={} reason=ENDED", requestId, eventId);
 			return new ParticipationResponse(
 					eventId,
-					null,
+					userId,
 					ParticipationResultStatus.ENDED,
 					null,
 					null,
@@ -83,19 +77,18 @@ public class ParticipationService {
 			);
 		}
 
-		User user = userService.findOrCreateByEmail(userEmail);
-		Participation existing = participationMapper.findByEventIdAndUserId(eventId, user.getUserId());
+		Participation existing = participationMapper.findByEventIdAndUserId(eventId, userId);
 		if (existing != null) {
 			log.info(
 					"participation_duplicate requestId={} eventId={} userId={} existingResult={}",
 					requestId,
 					eventId,
-					user.getUserId(),
+					userId,
 					existing.getResultStatus()
 			);
 			return new ParticipationResponse(
 					eventId,
-					user.getUserId(),
+					userId,
 					ParticipationResultStatus.DUPLICATE,
 					existing.getResultStatus(),
 					existing.getRequestSequence(),
@@ -105,24 +98,26 @@ public class ParticipationService {
 			);
 		}
 
-		long requestSequence = event.getLastRequestSequence() + 1;
-		ParticipationResultStatus resultStatus = event.getCurrentWinnerCount() < event.getWinnerLimit()
+		long requestSequence = (long) event.getParticipantCount() + 1;
+		ParticipationResultStatus resultStatus = event.getWinnerCount() < event.getWinnerLimit()
 				? ParticipationResultStatus.WIN
 				: ParticipationResultStatus.LOSE;
-		int currentWinnerCount = resultStatus == ParticipationResultStatus.WIN
-				? event.getCurrentWinnerCount() + 1
-				: event.getCurrentWinnerCount();
-
-		eventMapper.updateProgress(eventId, currentWinnerCount, requestSequence);
+		int winnerCount = resultStatus == ParticipationResultStatus.WIN
+				? event.getWinnerCount() + 1
+				: event.getWinnerCount();
+		int participantCount = event.getParticipantCount() + 1;
 
 		LocalDateTime now = LocalDateTime.now(clock);
+		eventMapper.updateProgress(eventId, winnerCount, participantCount, now);
+
 		Participation participation = new Participation();
 		participation.setEventId(eventId);
-		participation.setUserId(user.getUserId());
+		participation.setUserId(userId);
 		participation.setParticipatedAt(now);
-		participation.setCreatedAt(now);
 		participation.setRequestSequence(requestSequence);
 		participation.setResultStatus(resultStatus);
+		participation.setGifticonAttachId(null);
+		participation.setCreatedAt(now);
 
 		participationMapper.insert(participation);
 
@@ -130,14 +125,14 @@ public class ParticipationService {
 				"participation_completed requestId={} eventId={} userId={} result={} requestSequence={}",
 				requestId,
 				eventId,
-				user.getUserId(),
+				userId,
 				resultStatus,
 				requestSequence
 		);
 
 		return new ParticipationResponse(
 				eventId,
-				user.getUserId(),
+				userId,
 				resultStatus,
 				null,
 				requestSequence,
@@ -148,53 +143,30 @@ public class ParticipationService {
 	}
 
 	@Transactional(readOnly = true)
-	public ParticipationResultResponse getParticipationResult(Long eventId, String rawUserEmail) {
-		eventService.getRequiredEvent(eventId);
-		String userEmail = userService.normalizeAndValidateEmail(rawUserEmail);
-		User user = userService.findByEmail(userEmail);
-		if (user == null) {
-			return new ParticipationResultResponse(eventId, null, false, null, null, null);
-		}
-
-		Participation participation = participationMapper.findByEventIdAndUserId(eventId, user.getUserId());
-		if (participation == null) {
-			return new ParticipationResultResponse(eventId, user.getUserId(), false, null, null, null);
-		}
-
-		return new ParticipationResultResponse(
-				eventId,
-				user.getUserId(),
-				true,
-				participation.getResultStatus(),
-				participation.getRequestSequence(),
-				participation.getParticipatedAt()
-		);
-	}
-
-	@Transactional(readOnly = true)
-	public List<ParticipantResponse> getParticipants(Long eventId) {
-		eventService.getRequiredEvent(eventId);
-		return participationMapper.findParticipantsByEventId(eventId).stream()
-				.map(this::toParticipantResponse)
+	public List<MyParticipationResponse> getMyParticipations(Long userId) {
+		return participationMapper.findMyParticipationsByUserId(userId).stream()
+				.map(row -> new MyParticipationResponse(
+						row.getEventId(),
+						row.getEventName(),
+						row.getProductName(),
+						row.getResultStatus(),
+						row.getParticipatedAt(),
+						row.getStartAt(),
+						row.getEndAt(),
+						row.getGifticonAttachId() != null
+				))
 				.toList();
 	}
 
 	@Transactional(readOnly = true)
-	public List<ParticipantResponse> getWinners(Long eventId) {
+	public Long getGifticonAttachId(Long userId, Long eventId) {
 		eventService.getRequiredEvent(eventId);
-		return participationMapper.findWinnersByEventId(eventId).stream()
-				.map(this::toParticipantResponse)
-				.toList();
-	}
-
-	private ParticipantResponse toParticipantResponse(ParticipationHistoryRow row) {
-		return new ParticipantResponse(
-				row.getUserId(),
-				row.getUserEmail(),
-				row.getResultStatus(),
-				row.getRequestSequence(),
-				row.getParticipatedAt()
-		);
+		Participation participation = participationMapper.findByEventIdAndUserId(eventId, userId);
+		if (participation == null || participation.getResultStatus() != ParticipationResultStatus.WIN
+				|| participation.getGifticonAttachId() == null) {
+			throw new ResourceNotFoundException("기프티콘 이미지를 찾을 수 없습니다.");
+		}
+		return participation.getGifticonAttachId();
 	}
 
 }

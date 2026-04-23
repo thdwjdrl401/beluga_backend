@@ -5,15 +5,18 @@ import java.time.LocalDateTime;
 public class Event {
 
 	private Long eventId;
-	private String title;
-	private String description;
+	private String eventName;
+	private String productName;
+	private Long representativeAttachId;
 	private LocalDateTime startAt;
 	private LocalDateTime endAt;
 	private int winnerLimit;
-	private int currentWinnerCount;
-	private long lastRequestSequence;
+	private int winnerCount;
+	private int participantCount;
 	private EventStatus status;
+	private Long createdBy;
 	private LocalDateTime createdAt;
+	private LocalDateTime updatedAt;
 
 	public Long getEventId() {
 		return eventId;
@@ -23,20 +26,28 @@ public class Event {
 		this.eventId = eventId;
 	}
 
-	public String getTitle() {
-		return title;
+	public String getEventName() {
+		return eventName;
 	}
 
-	public void setTitle(String title) {
-		this.title = title;
+	public void setEventName(String eventName) {
+		this.eventName = eventName;
 	}
 
-	public String getDescription() {
-		return description;
+	public String getProductName() {
+		return productName;
 	}
 
-	public void setDescription(String description) {
-		this.description = description;
+	public void setProductName(String productName) {
+		this.productName = productName;
+	}
+
+	public Long getRepresentativeAttachId() {
+		return representativeAttachId;
+	}
+
+	public void setRepresentativeAttachId(Long representativeAttachId) {
+		this.representativeAttachId = representativeAttachId;
 	}
 
 	public LocalDateTime getStartAt() {
@@ -63,20 +74,20 @@ public class Event {
 		this.winnerLimit = winnerLimit;
 	}
 
-	public int getCurrentWinnerCount() {
-		return currentWinnerCount;
+	public int getWinnerCount() {
+		return winnerCount;
 	}
 
-	public void setCurrentWinnerCount(int currentWinnerCount) {
-		this.currentWinnerCount = currentWinnerCount;
+	public void setWinnerCount(int winnerCount) {
+		this.winnerCount = winnerCount;
 	}
 
-	public long getLastRequestSequence() {
-		return lastRequestSequence;
+	public int getParticipantCount() {
+		return participantCount;
 	}
 
-	public void setLastRequestSequence(long lastRequestSequence) {
-		this.lastRequestSequence = lastRequestSequence;
+	public void setParticipantCount(int participantCount) {
+		this.participantCount = participantCount;
 	}
 
 	public EventStatus getStatus() {
@@ -87,12 +98,28 @@ public class Event {
 		this.status = status;
 	}
 
+	public Long getCreatedBy() {
+		return createdBy;
+	}
+
+	public void setCreatedBy(Long createdBy) {
+		this.createdBy = createdBy;
+	}
+
 	public LocalDateTime getCreatedAt() {
 		return createdAt;
 	}
 
 	public void setCreatedAt(LocalDateTime createdAt) {
 		this.createdAt = createdAt;
+	}
+
+	public LocalDateTime getUpdatedAt() {
+		return updatedAt;
+	}
+
+	public void setUpdatedAt(LocalDateTime updatedAt) {
+		this.updatedAt = updatedAt;
 	}
 
 }

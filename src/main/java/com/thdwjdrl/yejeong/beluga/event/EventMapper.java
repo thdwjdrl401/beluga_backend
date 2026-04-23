@@ -2,9 +2,7 @@ package com.thdwjdrl.yejeong.beluga.event;
 
 import java.util.List;
 
-import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -12,44 +10,21 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface EventMapper {
 
-	@Insert("""
-			INSERT INTO events (
-			    title,
-			    description,
-			    start_at,
-			    end_at,
-			    winner_limit,
-			    current_winner_count,
-			    last_request_sequence,
-			    status,
-			    created_at
-			) VALUES (
-			    #{title},
-			    #{description},
-			    #{startAt},
-			    #{endAt},
-			    #{winnerLimit},
-			    #{currentWinnerCount},
-			    #{lastRequestSequence},
-			    #{status},
-			    #{createdAt}
-			)
-			""")
-	@Options(useGeneratedKeys = true, keyProperty = "eventId")
-	void insert(Event event);
-
 	@Select("""
 			SELECT
 			    event_id,
-			    title,
-			    description,
+			    event_name,
+			    product_name,
+			    representative_attach_id,
 			    start_at,
 			    end_at,
 			    winner_limit,
-			    current_winner_count,
-			    last_request_sequence,
+			    winner_count,
+			    participant_count,
 			    status,
-			    created_at
+			    created_by,
+			    created_at,
+			    updated_at
 			FROM events
 			WHERE event_id = #{eventId}
 			""")
@@ -58,15 +33,18 @@ public interface EventMapper {
 	@Select("""
 			SELECT
 			    event_id,
-			    title,
-			    description,
+			    event_name,
+			    product_name,
+			    representative_attach_id,
 			    start_at,
 			    end_at,
 			    winner_limit,
-			    current_winner_count,
-			    last_request_sequence,
+			    winner_count,
+			    participant_count,
 			    status,
-			    created_at
+			    created_by,
+			    created_at,
+			    updated_at
 			FROM events
 			WHERE event_id = #{eventId}
 			FOR UPDATE
@@ -76,30 +54,35 @@ public interface EventMapper {
 	@Select("""
 			SELECT
 			    event_id,
-			    title,
-			    description,
+			    event_name,
+			    product_name,
+			    representative_attach_id,
 			    start_at,
 			    end_at,
 			    winner_limit,
-			    current_winner_count,
-			    last_request_sequence,
+			    winner_count,
+			    participant_count,
 			    status,
-			    created_at
+			    created_by,
+			    created_at,
+			    updated_at
 			FROM events
-			ORDER BY start_at DESC, event_id DESC
+			ORDER BY start_at ASC, event_id ASC
 			""")
 	List<Event> findAll();
 
 	@Update("""
 			UPDATE events
-			SET current_winner_count = #{currentWinnerCount},
-			    last_request_sequence = #{lastRequestSequence}
+			SET winner_count = #{winnerCount},
+			    participant_count = #{participantCount},
+			    updated_at = #{updatedAt}
 			WHERE event_id = #{eventId}
 			""")
 	int updateProgress(
 			@Param("eventId") Long eventId,
-			@Param("currentWinnerCount") int currentWinnerCount,
-			@Param("lastRequestSequence") long lastRequestSequence
+			@Param("winnerCount") int winnerCount,
+			@Param("participantCount") int participantCount,
+			@Param("updatedAt") java.time.LocalDateTime updatedAt
 	);
 
 }

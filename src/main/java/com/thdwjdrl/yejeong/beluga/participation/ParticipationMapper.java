@@ -16,15 +16,17 @@ public interface ParticipationMapper {
 			    event_id,
 			    user_id,
 			    participated_at,
-			    result_status,
 			    request_sequence,
+			    result_status,
+			    gifticon_attach_id,
 			    created_at
 			) VALUES (
 			    #{eventId},
 			    #{userId},
 			    #{participatedAt},
-			    #{resultStatus},
 			    #{requestSequence},
+			    #{resultStatus},
+			    #{gifticonAttachId},
 			    #{createdAt}
 			)
 			""")
@@ -37,8 +39,9 @@ public interface ParticipationMapper {
 			    event_id,
 			    user_id,
 			    participated_at,
-			    result_status,
 			    request_sequence,
+			    result_status,
+			    gifticon_attach_id,
 			    created_at
 			FROM event_participations
 			WHERE event_id = #{eventId}
@@ -48,37 +51,19 @@ public interface ParticipationMapper {
 
 	@Select("""
 			SELECT
-			    ep.participation_id,
 			    ep.event_id,
-			    ep.user_id,
-			    u.email AS user_email,
+			    e.event_name,
+			    e.product_name,
 			    ep.participated_at,
 			    ep.result_status,
-			    ep.request_sequence,
-			    ep.created_at
+			    ep.gifticon_attach_id,
+			    e.start_at,
+			    e.end_at
 			FROM event_participations ep
-			JOIN users u ON u.user_id = ep.user_id
-			WHERE ep.event_id = #{eventId}
-			ORDER BY ep.request_sequence ASC
+			JOIN events e ON e.event_id = ep.event_id
+			WHERE ep.user_id = #{userId}
+			ORDER BY ep.participated_at DESC, ep.participation_id DESC
 			""")
-	List<ParticipationHistoryRow> findParticipantsByEventId(@Param("eventId") Long eventId);
-
-	@Select("""
-			SELECT
-			    ep.participation_id,
-			    ep.event_id,
-			    ep.user_id,
-			    u.email AS user_email,
-			    ep.participated_at,
-			    ep.result_status,
-			    ep.request_sequence,
-			    ep.created_at
-			FROM event_participations ep
-			JOIN users u ON u.user_id = ep.user_id
-			WHERE ep.event_id = #{eventId}
-			  AND ep.result_status = 'WIN'
-			ORDER BY ep.request_sequence ASC
-			""")
-	List<ParticipationHistoryRow> findWinnersByEventId(@Param("eventId") Long eventId);
+	List<MyParticipationRow> findMyParticipationsByUserId(@Param("userId") Long userId);
 
 }

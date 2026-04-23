@@ -1,16 +1,14 @@
 package com.thdwjdrl.yejeong.beluga.event;
 
-import java.util.List;
-
 import com.thdwjdrl.yejeong.beluga.participation.ParticipationResponse;
-import com.thdwjdrl.yejeong.beluga.participation.ParticipationResultResponse;
 import com.thdwjdrl.yejeong.beluga.participation.ParticipationService;
+import com.thdwjdrl.yejeong.beluga.user.SessionUserService;
+import com.thdwjdrl.yejeong.beluga.user.User;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -19,36 +17,30 @@ public class EventController {
 
 	private final EventService eventService;
 	private final ParticipationService participationService;
+	private final SessionUserService sessionUserService;
 
-	public EventController(EventService eventService, ParticipationService participationService) {
+	public EventController(
+			EventService eventService,
+			ParticipationService participationService,
+			SessionUserService sessionUserService
+	) {
 		this.eventService = eventService;
 		this.participationService = participationService;
+		this.sessionUserService = sessionUserService;
 	}
 
 	@GetMapping
-	public List<EventResponse> getEvents(@RequestParam(required = false) String status) {
-		return eventService.getEvents(status);
-	}
-
-	@GetMapping("/{eventId}")
-	public EventResponse getEvent(@PathVariable Long eventId) {
-		return eventService.getEvent(eventId);
+	public EventListResponse getEvents() {
+		return eventService.getVisibleEvents();
 	}
 
 	@PostMapping("/{eventId}/participate")
 	public ParticipationResponse participate(
 			@PathVariable Long eventId,
-			@RequestHeader("X-User-Email") String userEmail
+			HttpSession session
 	) {
-		return participationService.participate(eventId, userEmail);
-	}
-
-	@GetMapping("/{eventId}/result")
-	public ParticipationResultResponse getResult(
-			@PathVariable Long eventId,
-			@RequestHeader("X-User-Email") String userEmail
-	) {
-		return participationService.getParticipationResult(eventId, userEmail);
+		User currentUser = sessionUserService.requireCurrentUser(session);
+		return participationService.participate(eventId, currentUser.getUserId());
 	}
 
 }
