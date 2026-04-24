@@ -1,20 +1,37 @@
 package com.thdwjdrl.yejeong.beluga.event;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.List;
 
-import com.thdwjdrl.yejeong.beluga.common.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.thdwjdrl.yejeong.beluga.attach.Attach;
+import com.thdwjdrl.yejeong.beluga.attach.AttachService;
+import com.thdwjdrl.yejeong.beluga.common.exception.ResourceNotFoundException;
+import com.thdwjdrl.yejeong.beluga.common.exception.UnauthorizedException;
+import com.thdwjdrl.yejeong.beluga.user.User;
 
 @Service
 public class EventService {
 
 	private final EventMapper eventMapper;
 	private final EventStatusResolver eventStatusResolver;
+	private final AttachService attachService;
+	private final Clock clock;
 
-	public EventService(EventMapper eventMapper, EventStatusResolver eventStatusResolver) {
+	public EventService(
+			EventMapper eventMapper,
+			EventStatusResolver eventStatusResolver,
+			AttachService attachService,
+			Clock clock
+	) {
 		this.eventMapper = eventMapper;
 		this.eventStatusResolver = eventStatusResolver;
+		this.attachService = attachService;
+		this.clock = clock;
 	}
 
 	@Transactional(readOnly = true)
@@ -71,6 +88,47 @@ public class EventService {
 				event.getEndAt(),
 				eventStatusResolver.resolve(event)
 		);
+	}
+
+	@Transactional
+	public EventSummaryResponse createEvent(EventCreateRequest request, MultipartFile image, User currentUser) {
+		if (!"ADMIN".equals(currentUser.getRole())) {
+			throw new UnauthorizedException("관리자만 이벤트를 생성할 수 있습니다.");
+		}
+
+		LocalDateTime now = LocalDateTime.now(clock);
+		Attach representativeAttach = attachService.saveEventRepresentativeImage(image);
+
+		try {
+			Event event = new Event();
+			event.setEventName(request.eventName());
+			event.setProductName(request.productName());
+			event.setRepresentativeAttachId(representativeAttach.getAttachId());
+			event.setStartAt(request.startAt());
+			event.setEndAt(request.endAt());
+			event.setWinnerLimit(request.winnerLimit());
+			event.setCreatedBy(currentUser.getUserId());
+			event.setCreatedAt(now);
+
+			eventMapper.insert(event);
+
+			return new EventSummaryResponse(
+					event.getEventId(),
+					event.getEventName(),
+					event.getProductName(),
+					event.getRepresentativeAttachId(),
+					event.getWinnerLimit(),
+					event.getWinnerCount(),
+					event.getParticipantCount(),
+					event.getStartAt(),
+					event.getEndAt(),
+					eventStatusResolver.resolve(event)
+			);
+		}
+		catch (RuntimeException exception) {
+			attachService.deleteStoredFile(representativeAttach);
+			throw exception;
+		}
 	}
 
 }
