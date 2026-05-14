@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.extern.slf4j.Slf4j;
 
 import com.thdwjdrl.yejeong.beluga.attach.Attach;
 import com.thdwjdrl.yejeong.beluga.attach.AttachService;
@@ -15,6 +16,7 @@ import com.thdwjdrl.yejeong.beluga.common.exception.UnauthorizedException;
 import com.thdwjdrl.yejeong.beluga.user.User;
 
 @Service
+@Slf4j
 public class EventService {
 
 	private final EventMapper eventMapper;
@@ -92,7 +94,8 @@ public class EventService {
 
 	@Transactional
 	public EventSummaryResponse createEvent(EventCreateRequest request, MultipartFile image, User currentUser) {
-		if (!"ADMIN".equals(currentUser.getRole())) {
+		
+		if (!"ADMIN".equals(currentUser.getRole().name())) {
 			throw new UnauthorizedException("관리자만 이벤트를 생성할 수 있습니다.");
 		}
 
@@ -107,8 +110,12 @@ public class EventService {
 			event.setStartAt(request.startAt());
 			event.setEndAt(request.endAt());
 			event.setWinnerLimit(request.winnerLimit());
+			event.setWinnerCount(0);
+			event.setParticipantCount(0);
+			event.setStatus(eventStatusResolver.resolve(event));
 			event.setCreatedBy(currentUser.getUserId());
 			event.setCreatedAt(now);
+			event.setUpdatedAt(now);
 
 			eventMapper.insert(event);
 

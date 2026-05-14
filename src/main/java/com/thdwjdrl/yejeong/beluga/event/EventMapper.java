@@ -24,7 +24,8 @@ public interface EventMapper {
 			    participant_count,
 			    status,
 			    created_by,
-			    created_at
+			    created_at,
+			    updated_at
 			) VALUES (
 			    #{eventName},
 			    #{productName},
@@ -36,7 +37,8 @@ public interface EventMapper {
 			    #{participantCount},
 			    #{status},
 			    #{createdBy},
-			    #{createdAt}
+			    #{createdAt},
+			    #{updatedAt}
 			)
 			""")
 	

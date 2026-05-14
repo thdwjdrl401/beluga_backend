@@ -11,11 +11,13 @@ import com.thdwjdrl.yejeong.beluga.user.SessionUserService;
 import com.thdwjdrl.yejeong.beluga.user.User;
 
 import jakarta.servlet.http.HttpSession;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/admin")
+@Slf4j
 public class AdminController {
 
 	private final EventService eventService;
@@ -33,10 +35,17 @@ public class AdminController {
 			@RequestParam("winnerLimit") int winnerLimit,
 			@RequestParam("startAt") String startAt,
 			@RequestParam("endAt") String endAt,
-			@RequestPart(value = "image", required = false) MultipartFile image,
+			@RequestPart("image") MultipartFile image,
 			HttpSession session
 	) {
 		User currentUser = sessionUserService.requireCurrentUser(session);
+
+		log.info(
+				"admin_create_event_session_check sessionId={} userId={} role={}",
+				session.getId(),
+				currentUser.getUserId(),
+				currentUser.getRole()
+		);
 
 		EventCreateRequest request = new EventCreateRequest(
 				eventName,

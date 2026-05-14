@@ -3,8 +3,10 @@ package com.thdwjdrl.yejeong.beluga.user;
 import com.thdwjdrl.yejeong.beluga.common.exception.UnauthorizedException;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class SessionUserService {
 
 	private static final String USER_ID_SESSION_KEY = "belugaUserId";
@@ -21,6 +23,7 @@ public class SessionUserService {
 
 	public User requireCurrentUser(HttpSession session) {
 		Object userId = session.getAttribute(USER_ID_SESSION_KEY);
+		log.info("session_user_lookup sessionId={} userId={}", session.getId(), userId);
 		if (!(userId instanceof Number numberValue)) {
 			throw new UnauthorizedException("로그인이 필요합니다.");
 		}
