@@ -8,8 +8,6 @@ public record EventSummaryResponse(
 		String productName,
 		Long representativeAttachId,
 		int winnerLimit,
-		int winnerCount,
-		int participantCount,
 		LocalDateTime startAt,
 		LocalDateTime endAt,
 		EventStatus status

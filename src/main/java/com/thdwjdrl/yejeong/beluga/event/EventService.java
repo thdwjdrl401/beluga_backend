@@ -60,6 +60,13 @@ public class EventService {
 		);
 	}
 
+	public List<EventResultResponse> getEventsByStatus(EventStatus status){
+		return eventMapper.findAll().stream()
+				.map(this::toResultResponse)
+				.filter(event -> event.status() == status)
+				.toList();
+	}
+
 	@Transactional(readOnly = true)
 	public Event getRequiredEvent(Long eventId) {
 		Event event = eventMapper.findById(eventId);
@@ -84,6 +91,17 @@ public class EventService {
 				event.getProductName(),
 				event.getRepresentativeAttachId(),
 				event.getWinnerLimit(),
+				event.getStartAt(),
+				event.getEndAt(),
+				eventStatusResolver.resolve(event)
+		);
+	}
+
+	private EventResultResponse toResultResponse(Event event) {
+		return new EventResultResponse(
+				event.getEventId(),
+				event.getEventName(),
+				event.getProductName(),
 				event.getWinnerCount(),
 				event.getParticipantCount(),
 				event.getStartAt(),
@@ -91,6 +109,8 @@ public class EventService {
 				eventStatusResolver.resolve(event)
 		);
 	}
+
+
 
 	@Transactional
 	public EventSummaryResponse createEvent(EventCreateRequest request, MultipartFile image, User currentUser) {
@@ -125,8 +145,6 @@ public class EventService {
 					event.getProductName(),
 					event.getRepresentativeAttachId(),
 					event.getWinnerLimit(),
-					event.getWinnerCount(),
-					event.getParticipantCount(),
 					event.getStartAt(),
 					event.getEndAt(),
 					eventStatusResolver.resolve(event)
