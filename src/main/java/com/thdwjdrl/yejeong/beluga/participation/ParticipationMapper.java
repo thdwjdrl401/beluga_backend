@@ -66,4 +66,21 @@ public interface ParticipationMapper {
 			""")
 	List<MyParticipationRow> findMyParticipationsByUserId(@Param("userId") Long userId);
 
+	@Select("""
+			SELECT
+				ep.participation_id,
+				ep.event_id,
+				u.user_id,
+				u.nickname,
+				u.email,
+				ep.participated_at,
+				ep.request_sequence,
+				ep.result_status
+			FROM event_participations ep
+			JOIN users u ON ep.user_id = u.user_id
+			WHERE ep.event_id = #{eventId}
+			ORDER BY ep.created_at DESC;
+			""")
+	List<ParticipationsListResponse> findParticipationsByEventId(@Param("eventId") Long eventId);
+
 }

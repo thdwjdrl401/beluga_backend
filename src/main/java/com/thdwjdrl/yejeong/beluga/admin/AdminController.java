@@ -1,12 +1,12 @@
 package com.thdwjdrl.yejeong.beluga.admin;
 
+import com.thdwjdrl.yejeong.beluga.event.*;
+import com.thdwjdrl.yejeong.beluga.participation.ParticipationService;
+import com.thdwjdrl.yejeong.beluga.participation.ParticipationsListResponse;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.thdwjdrl.yejeong.beluga.event.EventCreateRequest;
-import com.thdwjdrl.yejeong.beluga.event.EventService;
-import com.thdwjdrl.yejeong.beluga.event.EventSummaryResponse;
 import com.thdwjdrl.yejeong.beluga.user.SessionUserService;
 import com.thdwjdrl.yejeong.beluga.user.User;
 
@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/admin")
@@ -22,10 +23,12 @@ public class AdminController {
 
 	private final EventService eventService;
 	private final SessionUserService sessionUserService;
+	private final ParticipationService participationService;
 
-	public AdminController(EventService eventService, SessionUserService sessionUserService) {
+	public AdminController(EventService eventService, SessionUserService sessionUserService, ParticipationService participationService) {
 		this.eventService = eventService;
 		this.sessionUserService = sessionUserService;
+		this.participationService = participationService;
 	}
 
 	@PostMapping(path = "/events", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -56,5 +59,23 @@ public class AdminController {
 		);
 		return eventService.createEvent(request, image, currentUser);
 	}
+
+	@GetMapping(path = "/events/results")
+	public List<EventResultResponse> getEventsResult(
+		@RequestParam("status") EventStatus status){
+
+		return eventService.getEventsByStatus(status);
+	}
+
+	@GetMapping(path = "/events/{eventId}/participations")
+	public List<ParticipationsListResponse> getParticipationsList(
+			@PathVariable("eventId") long eventId
+	){
+		return participationService.getAllParticipations(eventId);
+	}
+
+
+
+
 
 }

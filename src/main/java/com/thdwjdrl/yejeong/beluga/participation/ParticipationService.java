@@ -169,4 +169,7 @@ public class ParticipationService {
 		return participation.getGifticonAttachId();
 	}
 
+	public List<ParticipationsListResponse> getAllParticipations(long eventId) {
+		return participationMapper.findParticipationsByEventId(eventId);
+	}
 }
