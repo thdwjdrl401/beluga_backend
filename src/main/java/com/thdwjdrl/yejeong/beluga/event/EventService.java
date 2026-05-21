@@ -113,7 +113,7 @@ public class EventService {
 
 
 	@Transactional
-	public EventSummaryResponse createEvent(EventCreateRequest request, MultipartFile image, User currentUser) {
+	public void createEvent(EventCreateRequest request, MultipartFile image, User currentUser) {
 		
 		if (!"ADMIN".equals(currentUser.getRole().name())) {
 			throw new UnauthorizedException("관리자만 이벤트를 생성할 수 있습니다.");
@@ -139,16 +139,6 @@ public class EventService {
 
 			eventMapper.insert(event);
 
-			return new EventSummaryResponse(
-					event.getEventId(),
-					event.getEventName(),
-					event.getProductName(),
-					event.getRepresentativeAttachId(),
-					event.getWinnerLimit(),
-					event.getStartAt(),
-					event.getEndAt(),
-					eventStatusResolver.resolve(event)
-			);
 		}
 		catch (RuntimeException exception) {
 			attachService.deleteStoredFile(representativeAttach);

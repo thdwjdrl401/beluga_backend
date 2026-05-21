@@ -33,7 +33,7 @@ public class AdminController {
 	}
 
 	@PostMapping(path = "/events", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public SuccessResponse<EventSummaryResponse> createEvent(
+	public SuccessResponse createEvent(
 			@RequestParam("eventName") String eventName,
 			@RequestParam("productName") String productName,
 			@RequestParam("winnerLimit") int winnerLimit,
@@ -59,9 +59,9 @@ public class AdminController {
 				winnerLimit
 		);
 
-		EventSummaryResponse response = eventService.createEvent(request, image, currentUser);
+		eventService.createEvent(request, image, currentUser);
 
-		return SuccessResponse.success("이벤트가 생성되었습니다.", response);
+		return SuccessResponse.success("이벤트가 생성되었습니다.", null);
 	}
 
 	@GetMapping(path = "/events/results")
