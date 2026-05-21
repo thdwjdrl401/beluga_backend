@@ -1,5 +1,6 @@
 package com.thdwjdrl.yejeong.beluga.admin;
 
+import com.thdwjdrl.yejeong.beluga.common.api.SuccessResponse;
 import com.thdwjdrl.yejeong.beluga.event.*;
 import com.thdwjdrl.yejeong.beluga.participation.ParticipationService;
 import com.thdwjdrl.yejeong.beluga.participation.ParticipationsListResponse;
@@ -32,7 +33,7 @@ public class AdminController {
 	}
 
 	@PostMapping(path = "/events", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public EventSummaryResponse createEvent(
+	public SuccessResponse<EventSummaryResponse> createEvent(
 			@RequestParam("eventName") String eventName,
 			@RequestParam("productName") String productName,
 			@RequestParam("winnerLimit") int winnerLimit,
@@ -57,21 +58,26 @@ public class AdminController {
 				LocalDateTime.parse(endAt),
 				winnerLimit
 		);
-		return eventService.createEvent(request, image, currentUser);
+
+		EventSummaryResponse response = eventService.createEvent(request, image, currentUser);
+
+		return SuccessResponse.success("이벤트가 생성되었습니다.", response);
 	}
 
 	@GetMapping(path = "/events/results")
-	public List<EventResultResponse> getEventsResult(
+	public SuccessResponse<List<EventResultResponse>> getEventsResult(
 		@RequestParam("status") EventStatus status){
 
-		return eventService.getEventsByStatus(status);
+		List<EventResultResponse> response = eventService.getEventsByStatus(status);
+		return SuccessResponse.success(response);
 	}
 
 	@GetMapping(path = "/events/{eventId}/participations")
-	public List<ParticipationsListResponse> getParticipationsList(
+	public SuccessResponse<List<ParticipationsListResponse>> getParticipationsList(
 			@PathVariable("eventId") long eventId
 	){
-		return participationService.getAllParticipations(eventId);
+		List<ParticipationsListResponse> response = participationService.getAllParticipations(eventId);
+		return SuccessResponse.success(response);
 	}
 
 

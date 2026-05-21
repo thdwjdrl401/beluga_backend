@@ -1,5 +1,6 @@
 package com.thdwjdrl.yejeong.beluga.user;
 
+import com.thdwjdrl.yejeong.beluga.common.api.SuccessResponse;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,15 +23,18 @@ public class AuthController {
 
 	@PostMapping("/signup")
 	@ResponseStatus(HttpStatus.CREATED)
-	public UserProfileResponse signup(@RequestBody SignupRequest request) {
-		return userService.toProfile(userService.signUp(request));
+	public SuccessResponse<UserProfileResponse> signup(@RequestBody SignupRequest request) {
+		return SuccessResponse.success(
+				"회원가입이 완료되었습니다.",
+				userService.toProfile(userService.signUp(request))
+		);
 	}
 
 	@PostMapping("/login")
-	public UserProfileResponse login(@RequestBody LoginRequest request, HttpSession session) {
+	public SuccessResponse<UserProfileResponse> login(@RequestBody LoginRequest request, HttpSession session) {
 		User user = userService.authenticate(request);
 		sessionUserService.login(session, user);
-		return userService.toProfile(user);
+		return SuccessResponse.success("로그인이 완료되었습니다.", userService.toProfile(user));
 	}
 
 }

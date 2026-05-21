@@ -1,5 +1,6 @@
 package com.thdwjdrl.yejeong.beluga.event;
 
+import com.thdwjdrl.yejeong.beluga.common.api.SuccessResponse;
 import com.thdwjdrl.yejeong.beluga.participation.ParticipationResponse;
 import com.thdwjdrl.yejeong.beluga.participation.ParticipationService;
 import com.thdwjdrl.yejeong.beluga.user.SessionUserService;
@@ -30,17 +31,20 @@ public class EventController {
 	}
 
 	@GetMapping
-	public EventListResponse getEvents() {
-		return eventService.getVisibleEvents();
+	public SuccessResponse<EventListResponse> getEvents() {
+		return SuccessResponse.success(eventService.getVisibleEvents());
 	}
 
 	@PostMapping("/{eventId}/participate")
-	public ParticipationResponse participate(
+	public SuccessResponse<ParticipationResponse> participate(
 			@PathVariable Long eventId,
 			HttpSession session
 	) {
 		User currentUser = sessionUserService.requireCurrentUser(session);
-		return participationService.participate(eventId, currentUser.getUserId());
+		return SuccessResponse.success(
+				"이벤트 참여가 완료되었습니다.",
+				participationService.participate(eventId, currentUser.getUserId())
+		);
 	}
 
 }

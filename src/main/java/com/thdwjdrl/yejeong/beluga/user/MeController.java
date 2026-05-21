@@ -1,9 +1,11 @@
 package com.thdwjdrl.yejeong.beluga.user;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import com.thdwjdrl.yejeong.beluga.attach.Attach;
 import com.thdwjdrl.yejeong.beluga.attach.AttachService;
+import com.thdwjdrl.yejeong.beluga.common.api.SuccessResponse;
 import com.thdwjdrl.yejeong.beluga.participation.MyParticipationResponse;
 import com.thdwjdrl.yejeong.beluga.participation.ParticipationService;
 import jakarta.servlet.http.HttpSession;
@@ -17,10 +19,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import static org.springframework.http.HttpStatus.NO_CONTENT;
 
 @RestController
 @RequestMapping("/me")
@@ -44,27 +43,30 @@ public class MeController {
 	}
 
 	@GetMapping
-	public UserProfileResponse getMe(HttpSession session) {
-		return userService.toProfile(sessionUserService.requireCurrentUser(session));
+	public SuccessResponse<UserProfileResponse> getMe(HttpSession session) {
+		return SuccessResponse.success(userService.toProfile(sessionUserService.requireCurrentUser(session)));
 	}
 
 	@PatchMapping("/nickname")
-	public UserProfileResponse updateNickname(@RequestBody UpdateNicknameRequest request, HttpSession session) {
+	public SuccessResponse<UserProfileResponse> updateNickname(@RequestBody UpdateNicknameRequest request, HttpSession session) {
 		User currentUser = sessionUserService.requireCurrentUser(session);
-		return userService.toProfile(userService.updateNickname(currentUser.getUserId(), request));
+		return SuccessResponse.success(
+				"닉네임이 변경되었습니다.",
+				userService.toProfile(userService.updateNickname(currentUser.getUserId(), request))
+		);
 	}
 
 	@PatchMapping("/password")
-	@ResponseStatus(NO_CONTENT)
-	public void updatePassword(@RequestBody UpdatePasswordRequest request, HttpSession session) {
+	public SuccessResponse<Void> updatePassword(@RequestBody UpdatePasswordRequest request, HttpSession session) {
 		User currentUser = sessionUserService.requireCurrentUser(session);
 		userService.updatePassword(currentUser.getUserId(), request);
+		return SuccessResponse.success("비밀번호가 변경되었습니다.", null);
 	}
 
 	@GetMapping("/participations")
-	public java.util.List<MyParticipationResponse> getParticipations(HttpSession session) {
+	public SuccessResponse<List<MyParticipationResponse>> getParticipations(HttpSession session) {
 		User currentUser = sessionUserService.requireCurrentUser(session);
-		return participationService.getMyParticipations(currentUser.getUserId());
+		return SuccessResponse.success(participationService.getMyParticipations(currentUser.getUserId()));
 	}
 
 	@GetMapping("/participations/{eventId}/gifticon")
